@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+.vscode/
+.DS_Store
+__MACOSX/
+
+HW1/alexnet.pth
