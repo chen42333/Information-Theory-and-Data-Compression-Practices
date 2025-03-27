@@ -3,6 +3,7 @@
 #include <map>
 #include <tuple>
 #include <queue>
+#include <stack>
 using namespace std;
 
 #define BITS 8
@@ -136,7 +137,7 @@ void output(ifstream &input_file, ofstream &output_file, map<alphabet, tuple<alp
 {
     alphabet input_c;
     char output_c = 0;
-    int output_c_idx = 0;
+    int output_c_idx = 7;
 
     while (input_file.read(reinterpret_cast<char*>(&input_c), sizeof(alphabet)) || input_file.gcount() > 0)
     {
@@ -146,33 +147,31 @@ void output(ifstream &input_file, ofstream &output_file, map<alphabet, tuple<alp
             input_c &= mask;
         }
 
+        stack<alphabet> codeword_bit;
         alphabet cur_set = get<0>(node[input_c]);
-        output_c |= (get<1>(node[input_c]) << output_c_idx);
-        if (++output_c_idx == 8)
-        {
-            output_file.write(&output_c, 1);
-            output_c = 0;
-            output_c_idx = 0;
-        }
+        codeword_bit.push(get<1>(node[input_c]));
 
         while (get<0>(set[cur_set]) != cur_set) // or get<1>(set[cur_set]) != INIT_VAL
         {
-            output_c |= (get<1>(set[cur_set]) << output_c_idx);
-            if (++output_c_idx == 8)
+            codeword_bit.push(get<1>(set[cur_set]));
+            cur_set = get<0>(set[cur_set]);
+        }
+
+        while (!codeword_bit.empty())
+        {
+            output_c |= (codeword_bit.top() << output_c_idx);
+            if (!output_c_idx--)
             {
                 output_file.write(&output_c, 1);
                 output_c = 0;
-                output_c_idx = 0;
+                output_c_idx = 7;
             }
-            cur_set = get<0>(set[cur_set]);
+            codeword_bit.pop();
         }
     }
 
-    if (output_c_idx)
-    {
-        output_c <<= (8 - output_c_idx);
+    if (output_c_idx < 7)
         output_file.write(&output_c, 1);
-    }
 }
 
 int main(int argc, char *argv[])
