@@ -4,7 +4,7 @@ TARGET = huffman
 PROG = $(TARGET)
 
 all:
-	$(CC) $(CFLAGS) $(TARGET).cpp -o $(TARGET)
+	$(CC) $(CFLAGS) $(TARGET).cpp -o $(TARGET) -DBITS=$(BITS)
 
 clean:
 	rm -f $(PROG)

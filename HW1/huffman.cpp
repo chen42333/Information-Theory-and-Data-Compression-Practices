@@ -7,7 +7,6 @@
 #include <climits>
 using namespace std;
 
-#define BITS 8
 #define TABLE_SIZE_EXP 8
 
 #if (BITS == 64)
