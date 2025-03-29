@@ -56,7 +56,7 @@ static void compute_prob(void **table, priority_queue<prob_node> &prob, map<alph
     if (level == page_level)
     {
         double p = *(uint64_t*)table / (double)num_alphabet;
-        prob.push({idx, p, false});
+        prob.push({.c = idx, .p = p, .is_set = false});
         node[idx] = make_tuple(idx, INIT_VAL);
         free(table);
         return;
@@ -105,7 +105,7 @@ void huffman(map<alphabet, tuple<alphabet, alphabet>> &node, map<alphabet, tuple
         set[i] = make_tuple(i, INIT_VAL);
 
         new_prob = least_prob[0].p + least_prob[1].p;
-        prob.push({i, new_prob, true});
+        prob.push({.c = i, .p = new_prob, .is_set = true});
     }
 }
 
