@@ -13,6 +13,23 @@ using namespace std;
 
 #define TABLE_SIZE_EXP 8
 
+struct prob_node
+{
+    alphabet c;
+    double p;
+    bool is_set;
+    bool operator < (const prob_node &nd) const
+    {
+        return this->p > nd.p;
+    }
+};
+
+struct code_node
+{
+    uint64_t len; // The unit is bit
+    uint8_t code[];
+};
+
 extern void *code_table[];
 
 void count_alphabet(ifstream&);

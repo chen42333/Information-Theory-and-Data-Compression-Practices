@@ -2,23 +2,6 @@
 
 #define INIT_VAL (alphabet)0xff
 
-struct prob_node
-{
-    alphabet c;
-    double p;
-    bool is_set;
-    bool operator < (const prob_node &nd) const
-    {
-        return this->p > nd.p;
-    }
-};
-
-struct code_node
-{
-    uint64_t len; // The unit is bit
-    uint8_t code[];
-};
-
 int num_alphabet = 0;
 void *count_table[1ULL << TABLE_SIZE_EXP] = { NULL };
 void *code_table[1ULL << TABLE_SIZE_EXP] = { NULL };
