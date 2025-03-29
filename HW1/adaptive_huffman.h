@@ -6,7 +6,20 @@
 #include "defines.h"
 using namespace std;
 
+struct coding_tree_node
+{
+    uint64_t id;
+    uint64_t weight;
+    bool has_alphabet;
+    alphabet c;
+    coding_tree_node *parent;
+    coding_tree_node *children[2];
+};
+
+extern coding_tree_node *root;
+
 void init_coding_tree();
 void adaptive_huffman(ifstream&, ofstream&);
+void free_coding_tree(coding_tree_node *nd);
 
 #endif

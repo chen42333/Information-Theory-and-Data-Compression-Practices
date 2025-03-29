@@ -2,15 +2,7 @@ CC = g++
 CFLAGS = -g -std=c++17 -MMD
 TARGET = huffman
 PROG = $(TARGET) *.o *.d
-
-ALGO = BASIC
-ifeq ($(ALGO),ADAPTIVE)
-    ALGO_LIB = adaptive_huffman
-else
-	ALGO_LIB = basic_huffman
-endif
-
-SRCS = $(TARGET).cpp $(ALGO_LIB).cpp
+SRCS = huffman.cpp basic_huffman.cpp adaptive_huffman.cpp
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(SRCS:.cpp=.d)
 
@@ -24,7 +16,7 @@ $(TARGET): $(OBJS)
 -include $(DEPS)
 
 %.o: %.cpp
-	$(CC) $(CFLAGS) -c $< -o $@ -DBITS=$(BITS) -D$(ALGO)
+	$(CC) $(CFLAGS) -c $< -o $@ -DBITS=$(BITS)
 
 clean:
 	rm -f $(PROG)

@@ -1,12 +1,13 @@
 # Huffman Coding
 ## Build
 ```
-make BITS=<size of alphabet> [ALGO=<algorithm>]
+make BITS=<size of alphabet>
 ```
 - Supported alphabet size: `8`, `16`, `32`, `64`
-- Supported algorithm: `BASIC` (basic huffman, default), `ADAPTIVE` (adaptive huffman)
-- `make clean` before changing the algorithm or alphabet size
+- `make clean` before changing the alphabet size
 ## Execution
 ```
-./huffman <input file> <output file>
+./huffman -i <input-file> -o <output-file> [-e|-d] [-a <basic|adaptive>]
 ```
+- `-a` for algorithm: `basic` (default), `adaptive`
+- `-e` for encoding (default), `-d` for decoding
