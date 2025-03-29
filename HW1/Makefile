@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -g -std=c++17 -MMD
+CFLAGS = -g -std=c++17 -MMD -Ofast
 TARGET = huffman
 PROG = $(TARGET) *.o *.d
 SRCS = huffman.cpp basic_huffman.cpp adaptive_huffman.cpp
