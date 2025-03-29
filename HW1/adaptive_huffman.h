@@ -3,6 +3,10 @@
 
 #include <iostream>
 #include <fstream>
+#include <map>
+#include <set>
+#include <stack>
+#include <climits>
 #include "defines.h"
 using namespace std;
 
