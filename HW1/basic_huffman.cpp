@@ -6,6 +6,7 @@ int num_alphabet = 0;
 void *count_table[1ULL << TABLE_SIZE_EXP] = { NULL };
 void *code_table[1ULL << TABLE_SIZE_EXP] = { NULL };
 int page_level = sizeof(alphabet) * CHAR_BIT / TABLE_SIZE_EXP;
+uint64_t code_table_size = 0;
 
 void count_alphabet(ifstream &file)
 {
@@ -156,6 +157,7 @@ void fill_code_table(map<alphabet, tuple<alphabet, alphabet>> &node, map<alphabe
         }
         nd->len = codeword_bit.size();
         c_ptr = nd->code;
+        code_table_size += sizeof(code_table_node) + (codeword_bit.size() + CHAR_BIT - 1) / CHAR_BIT;
 
         while (!codeword_bit.empty())
         {
@@ -189,11 +191,37 @@ void fill_code_table(map<alphabet, tuple<alphabet, alphabet>> &node, map<alphabe
     }
 }
 
+static void output_code_table(ofstream &output_file, void **table, int level, alphabet idx)
+{
+    if (level == page_level)
+    {
+        code_node *nd = (code_node*)table;
+        output_file.write(reinterpret_cast<char*>(&idx), sizeof(alphabet));
+        output_file.write(reinterpret_cast<char*>(&nd->len), sizeof(nd->len));
+        output_file.write(reinterpret_cast<char*>(nd->code), nd->len);
+        return;
+    }
+
+    for (alphabet i = 0; ; i++)
+    {
+        ((uint8_t*)&idx)[level] = i;
+
+        if (table[i])
+            output_code_table(output_file, (void**)table[i], level + 1, idx);
+        
+        if (i == (1ULL << TABLE_SIZE_EXP) - 1) // Prevent the infinite loop due to overflow of i when BITS == 8
+            break;
+    }
+}
+
 void output(ifstream &input_file, ofstream &output_file)
 {
     alphabet input_c;
     char output_c = 0;
     int output_c_remain = 0;
+
+    output_file.write(reinterpret_cast<char*>(&code_table_size), sizeof(code_table_size));
+    output_code_table(output_file, code_table, 0, 0);
 
     while (input_file.read(reinterpret_cast<char*>(&input_c), sizeof(alphabet)) || input_file.gcount() > 0)
     {

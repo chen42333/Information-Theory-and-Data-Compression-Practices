@@ -30,6 +30,13 @@ struct code_node
     uint8_t code[];
 };
 
+struct code_table_node // For decoding
+{
+    alphabet c;
+    uint64_t len; // The unit is bit
+    uint8_t code[];
+};
+
 extern void *code_table[];
 
 void count_alphabet(ifstream&);
