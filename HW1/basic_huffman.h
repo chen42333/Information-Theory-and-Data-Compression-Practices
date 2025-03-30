@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <fstream>
-#include <map>
+#include <unordered_map>
 #include <tuple>
 #include <queue>
 #include <stack>
@@ -11,7 +11,7 @@
 #include "defines.h"
 using namespace std;
 
-#define TABLE_SIZE_EXP 8
+#define TABLE_SIZE_EXP CHAR_BIT
 
 struct prob_node
 {
@@ -40,9 +40,12 @@ struct code_table_node // For decoding
 extern void *code_table[];
 
 void count_alphabet(ifstream&);
-void huffman(map<alphabet, tuple<alphabet, alphabet>>&, map<alphabet, tuple<alphabet, alphabet>>&);
+void huffman(unordered_map<alphabet, tuple<alphabet, alphabet>>&, unordered_map<alphabet, tuple<alphabet, alphabet>>&);
 void free_code_table(void**, int);
-void fill_code_table(map<alphabet, tuple<alphabet, alphabet>>&, map<alphabet, tuple<alphabet, alphabet>>&);
+void fill_code_table(unordered_map<alphabet, tuple<alphabet, alphabet>>&, unordered_map<alphabet, tuple<alphabet, alphabet>>&);
 void output(ifstream&, ofstream&);
+
+void fill_code_table_decode(ifstream&);
+void huffman_decode(ifstream&, ofstream&);
 
 #endif

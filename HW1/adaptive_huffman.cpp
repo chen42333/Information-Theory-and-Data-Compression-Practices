@@ -4,9 +4,9 @@
 
 coding_tree_node *root;
 uint64_t next_id;
-map<uint64_t, set<uint64_t>> blocks; // weight to block
-map<uint64_t, coding_tree_node*> node_table; // id to node
-map<alphabet, uint64_t> id_table; // alphabet to id
+unordered_map<uint64_t, set<uint64_t>> blocks; // weight to block
+unordered_map<uint64_t, coding_tree_node*> node_table; // id to node
+unordered_map<alphabet, uint64_t> id_table; // alphabet to id
 coding_tree_node *NYT;
 
 char output_c;

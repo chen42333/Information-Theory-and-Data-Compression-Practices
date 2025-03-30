@@ -74,8 +74,8 @@ int main(int argc, char *argv[])
 
     if (opts.algo == BASIC)
     {
-        map<alphabet, tuple<alphabet, alphabet>> node; // The tuple stands for (set, bit)
-        map<alphabet, tuple<alphabet, alphabet>> set;
+        unordered_map<alphabet, tuple<alphabet, alphabet>> node; // The tuple stands for (set, bit)
+        unordered_map<alphabet, tuple<alphabet, alphabet>> set;
 
         count_alphabet(input_file);
         huffman(node, set);

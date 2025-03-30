@@ -52,7 +52,7 @@ void count_alphabet(ifstream &file)
     }
 }
 
-static void compute_prob(void **table, priority_queue<prob_node> &prob, map<alphabet, tuple<alphabet, alphabet>> &node, int level, alphabet idx)
+static void compute_prob(void **table, priority_queue<prob_node> &prob, unordered_map<alphabet, tuple<alphabet, alphabet>> &node, int level, alphabet idx)
 {
     if (level == page_level)
     {
@@ -79,7 +79,7 @@ static void compute_prob(void **table, priority_queue<prob_node> &prob, map<alph
         free(table);
 }
 
-void huffman(map<alphabet, tuple<alphabet, alphabet>> &node, map<alphabet, tuple<alphabet, alphabet>> &set)
+void huffman(unordered_map<alphabet, tuple<alphabet, alphabet>> &node, unordered_map<alphabet, tuple<alphabet, alphabet>> &set)
 {
     priority_queue<prob_node> prob;
     int num_kind_alphabet;
@@ -131,7 +131,7 @@ void free_code_table(void **table, int level)
         free(table);
 }
 
-void fill_code_table(map<alphabet, tuple<alphabet, alphabet>> &node, map<alphabet, tuple<alphabet, alphabet>> &set)
+void fill_code_table(unordered_map<alphabet, tuple<alphabet, alphabet>> &node, unordered_map<alphabet, tuple<alphabet, alphabet>> &set)
 {
     for (const auto &_node: node)
     {
