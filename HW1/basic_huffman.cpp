@@ -7,6 +7,7 @@ void *count_table[1ULL << TABLE_SIZE_EXP] = { NULL };
 void *code_table[1ULL << TABLE_SIZE_EXP] = { NULL };
 int page_level = sizeof(alphabet) * CHAR_BIT / TABLE_SIZE_EXP;
 uint64_t code_table_size = 0;
+uint8_t num_remain_bytes = 0;
 
 void count_alphabet(ifstream &file)
 {
@@ -20,6 +21,7 @@ void count_alphabet(ifstream &file)
         {
             alphabet mask = (1ULL << (file.gcount() * CHAR_BIT)) - 1;   
             c &= mask;
+            num_remain_bytes = file.gcount();
         }
 
         num_alphabet++;
@@ -157,7 +159,7 @@ void fill_code_table(unordered_map<alphabet, tuple<alphabet, alphabet>> &node, u
         }
         nd->len = codeword_bit.size();
         c_ptr = nd->code;
-        code_table_size += sizeof(code_table_node) + (codeword_bit.size() + CHAR_BIT - 1) / CHAR_BIT;
+        code_table_size += sizeof(alphabet) + sizeof(uint64_t) + (codeword_bit.size() + CHAR_BIT - 1) / CHAR_BIT;
 
         while (!codeword_bit.empty())
         {
@@ -198,7 +200,7 @@ static void output_code_table(ofstream &output_file, void **table, int level, al
         code_node *nd = (code_node*)table;
         output_file.write(reinterpret_cast<char*>(&idx), sizeof(alphabet));
         output_file.write(reinterpret_cast<char*>(&nd->len), sizeof(nd->len));
-        output_file.write(reinterpret_cast<char*>(nd->code), nd->len);
+        output_file.write(reinterpret_cast<char*>(nd->code), (nd->len + CHAR_BIT - 1) / CHAR_BIT);
         return;
     }
 
@@ -220,6 +222,7 @@ void output(ifstream &input_file, ofstream &output_file)
     char output_c = 0;
     int output_c_remain = 0;
 
+    output_file.write(reinterpret_cast<char*>(&num_remain_bytes), sizeof(num_remain_bytes));
     output_file.write(reinterpret_cast<char*>(&code_table_size), sizeof(code_table_size));
     output_code_table(output_file, code_table, 0, 0);
 
@@ -273,4 +276,142 @@ void output(ifstream &input_file, ofstream &output_file)
 
     if (output_c_remain)
         output_file.write(&output_c, 1);
+}
+
+const uint64_t one_level_table_size = sizeof(void*) * (1ULL << TABLE_SIZE_EXP);
+
+void free_code_table_decode(void **table)
+{
+    for (alphabet i = 0; ; i++)
+    {
+        if (malloc_size(table[i]) >= one_level_table_size)
+            free_code_table_decode((void**)table[i]);
+        else if (table[i] && !(i != 0 && table[i] == table[i - 1]))
+            free(table[i]);
+        
+        if (i == (1ULL << TABLE_SIZE_EXP) - 1) // Prevent the infinite loop due to overflow of i when BITS == 8
+            break;
+    }
+        
+    if (table != code_table)
+        free(table);
+}
+
+static void __fill_code_table_decode(void **table)
+{
+    for (alphabet i = 0; ; i++)
+    {
+        if (!table[i])
+        {
+            if (i == 0)
+            {
+                cout << "Error: the first entry of table is empty" << endl;
+                exit(1);
+            }
+            else
+                table[i] = table[i - 1];
+        }
+        else if (malloc_size(table[i]) >= one_level_table_size)
+            __fill_code_table_decode((void**)table[i]);
+
+        if (i == (1ULL << TABLE_SIZE_EXP) - 1) // Prevent the infinite loop due to overflow of i when BITS == 8
+            break;
+    }
+}
+
+void fill_code_table_decode(ifstream &input_file)
+{
+    uint64_t read_size = 0;
+
+    if (!input_file.read(reinterpret_cast<char*>(&num_remain_bytes), sizeof(num_remain_bytes))
+    || !input_file.read(reinterpret_cast<char*>(&code_table_size), sizeof(uint64_t)))
+    {
+        cout << "Read error" << endl;
+        exit(1);
+    }
+
+    while (read_size < code_table_size)
+    {
+        code_table_node *nd = (code_table_node*)calloc(1, sizeof(code_table_node));
+        void **ptr = code_table;
+        uint64_t num_of_bytes;
+
+        input_file.read(reinterpret_cast<char*>(&nd->c), sizeof(alphabet));
+        input_file.read(reinterpret_cast<char*>(&nd->len), sizeof(uint64_t));
+        num_of_bytes = (nd->len + CHAR_BIT - 1) / CHAR_BIT;
+
+        for (int i = 0; i < num_of_bytes; i++)
+        {
+            uint8_t byte;
+
+            input_file.read(reinterpret_cast<char*>(&byte), 1);
+
+            if (i == num_of_bytes - 1)
+                ptr[byte] = nd;
+            else
+            {
+                if (!ptr[byte])
+                    ptr[byte] = calloc(1, sizeof(void*) * (1ULL << TABLE_SIZE_EXP));
+                ptr = (void**)ptr[byte];
+            }
+        }
+
+        read_size += sizeof(alphabet) + sizeof(uint64_t) + num_of_bytes;
+    }
+
+    __fill_code_table_decode(code_table);
+}
+
+void huffman_decode(ifstream &input_file, ofstream &output_file)
+{
+    uint8_t c = 0, buf;
+    int c_remain = 0;
+    bool skip_read = false;
+
+    while (true)
+    {
+        void **ptr = code_table;
+        code_table_node *nd;
+        int used_bits;
+
+        if (!skip_read)
+            if (!input_file.read(reinterpret_cast<char*>(&buf), 1))
+                return;
+
+        while (true)
+        {
+            c |= buf >> c_remain;
+            if (!(ptr = (void**)ptr[c]))
+            {
+                cout << "Error: empty code table entry" << endl;
+                exit(1);
+            }
+            if (malloc_size(ptr) < one_level_table_size) // Node found
+                break;
+            c = buf << (CHAR_BIT - c_remain);
+            input_file.read(reinterpret_cast<char*>(&buf), 1);
+        }
+        
+        nd = (code_table_node*)ptr;
+        used_bits = nd->len % CHAR_BIT;
+        if (used_bits == 0)
+            used_bits = CHAR_BIT;
+        if (input_file.peek() == EOF)
+            output_file.write(reinterpret_cast<char*>(&nd->c), num_remain_bytes);
+        else
+            output_file.write(reinterpret_cast<char*>(&nd->c), sizeof(alphabet));
+
+        if (used_bits <= c_remain) // The content in buf isn't used actually
+        {
+            c <<= used_bits;
+            c_remain = c_remain - used_bits;
+            skip_read = true;
+        } else {
+            int shift_bits = used_bits - c_remain;
+
+            c = buf << shift_bits;
+            c_remain = CHAR_BIT - shift_bits;
+            skip_read = false;
+        }
+    }
 }

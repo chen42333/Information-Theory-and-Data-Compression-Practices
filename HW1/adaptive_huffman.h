@@ -25,5 +25,6 @@ extern coding_tree_node *root;
 void init_coding_tree();
 void adaptive_huffman(ifstream&, ofstream&);
 void free_coding_tree(coding_tree_node *nd);
+void adaptive_huffman_decode(ifstream&, ofstream&);
 
 #endif

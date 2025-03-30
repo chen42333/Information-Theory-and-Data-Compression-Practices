@@ -74,22 +74,31 @@ int main(int argc, char *argv[])
 
     if (opts.algo == BASIC)
     {
-        unordered_map<alphabet, tuple<alphabet, alphabet>> node; // The tuple stands for (set, bit)
-        unordered_map<alphabet, tuple<alphabet, alphabet>> set;
+        if (opts.encode)
+        {
+            unordered_map<alphabet, tuple<alphabet, alphabet>> node; // The tuple stands for (set, bit)
+            unordered_map<alphabet, tuple<alphabet, alphabet>> set;
 
-        count_alphabet(input_file);
-        huffman(node, set);
+            count_alphabet(input_file);
+            huffman(node, set);
 
-        input_file.clear();
-        input_file.seekg(0, std::ios::beg);
+            input_file.clear();
+            input_file.seekg(0, std::ios::beg);
 
-        fill_code_table(node, set);
-        output(input_file, output_file);
-
-        free_code_table(code_table, 0);
+            fill_code_table(node, set);
+            output(input_file, output_file);
+            free_code_table(code_table, 0);
+        } else {
+            fill_code_table_decode(input_file);
+            huffman_decode(input_file, output_file);
+            free_code_table_decode(code_table);
+        }
     } else if (opts.algo == ADAPTIVE) {
         init_coding_tree();
-        adaptive_huffman(input_file, output_file);
+        if (opts.encode)
+            adaptive_huffman(input_file, output_file);
+        else 
+            adaptive_huffman_decode(input_file, output_file);
         free_coding_tree(root);
     }
 

@@ -8,6 +8,13 @@
 #include <queue>
 #include <stack>
 #include <climits>
+
+#if defined(__APPLE__) // macOS
+    #include <malloc/malloc.h>
+#elif defined(__linux__) // Linux
+    #include <malloc.h>
+#endif
+
 #include "defines.h"
 using namespace std;
 
@@ -34,7 +41,6 @@ struct code_table_node // For decoding
 {
     alphabet c;
     uint64_t len; // The unit is bit
-    uint8_t code[];
 };
 
 extern void *code_table[];
@@ -47,5 +53,6 @@ void output(ifstream&, ofstream&);
 
 void fill_code_table_decode(ifstream&);
 void huffman_decode(ifstream&, ofstream&);
+void free_code_table_decode(void**);
 
 #endif
