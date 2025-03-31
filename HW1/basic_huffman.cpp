@@ -7,7 +7,7 @@ void *count_table[1ULL << TABLE_SIZE_EXP] = { NULL };
 void *code_table[1ULL << TABLE_SIZE_EXP] = { NULL };
 int page_level = sizeof(alphabet) * CHAR_BIT / TABLE_SIZE_EXP;
 uint64_t code_table_size = 0;
-uint8_t num_remain_bytes = 0;
+uint8_t num_bytes = 0; // Number of bytes of the original file (mod 256)
 
 void count_alphabet(ifstream &file)
 {
@@ -21,9 +21,9 @@ void count_alphabet(ifstream &file)
         {
             alphabet mask = (1ULL << (file.gcount() * CHAR_BIT)) - 1;   
             c &= mask;
-            num_remain_bytes = file.gcount();
         }
 
+        num_bytes += file.gcount();
         num_alphabet++;
 
         for (int i = 0; i < page_level; i++)
@@ -222,7 +222,7 @@ void output(ifstream &input_file, ofstream &output_file)
     char output_c = 0;
     int output_c_remain = 0;
 
-    output_file.write(reinterpret_cast<char*>(&num_remain_bytes), sizeof(num_remain_bytes));
+    output_file.write(reinterpret_cast<char*>(&num_bytes), sizeof(num_bytes));
     output_file.write(reinterpret_cast<char*>(&code_table_size), sizeof(code_table_size));
     output_code_table(output_file, code_table, 0, 0);
 
@@ -323,7 +323,7 @@ void fill_code_table_decode(ifstream &input_file)
 {
     uint64_t read_size = 0;
 
-    if (!input_file.read(reinterpret_cast<char*>(&num_remain_bytes), sizeof(num_remain_bytes))
+    if (!input_file.read(reinterpret_cast<char*>(&num_bytes), sizeof(num_bytes))
     || !input_file.read(reinterpret_cast<char*>(&code_table_size), sizeof(uint64_t)))
     {
         cout << "Read error" << endl;
@@ -364,7 +364,7 @@ void fill_code_table_decode(ifstream &input_file)
 
 void huffman_decode(ifstream &input_file, ofstream &output_file)
 {
-    uint8_t c = 0, buf;
+    uint8_t c = 0, buf, num_writen_bytes = 0;
     int c_remain = 0;
     bool skip_read = false;
 
@@ -375,8 +375,7 @@ void huffman_decode(ifstream &input_file, ofstream &output_file)
         int used_bits;
 
         if (!skip_read)
-            if (!input_file.read(reinterpret_cast<char*>(&buf), 1))
-                return;
+            input_file.read(reinterpret_cast<char*>(&buf), 1);
 
         while (true)
         {
@@ -396,10 +395,14 @@ void huffman_decode(ifstream &input_file, ofstream &output_file)
         used_bits = nd->len % CHAR_BIT;
         if (used_bits == 0)
             used_bits = CHAR_BIT;
-        if (input_file.peek() == EOF)
-            output_file.write(reinterpret_cast<char*>(&nd->c), num_remain_bytes);
-        else
+        if (input_file.peek() == EOF && num_writen_bytes + sizeof(alphabet) >= num_bytes)
+        {
+            output_file.write(reinterpret_cast<char*>(&nd->c), num_bytes - num_writen_bytes);
+            return;
+        } else {
             output_file.write(reinterpret_cast<char*>(&nd->c), sizeof(alphabet));
+            num_writen_bytes += sizeof(alphabet);
+        }
 
         if (used_bits <= c_remain) // The content in buf isn't used actually
         {
