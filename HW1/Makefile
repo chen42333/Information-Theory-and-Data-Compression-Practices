@@ -5,6 +5,7 @@ PROG = $(TARGET) *.o *.d
 SRCS = huffman.cpp basic_huffman.cpp adaptive_huffman.cpp
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(SRCS:.cpp=.d)
+BITS = 32
 
 .PHONY = all clean huffman
 
