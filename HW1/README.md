@@ -1,4 +1,10 @@
 # Huffman Coding
+## Auto Test
+```
+chmod +x test.sh
+./test.sh <original-file> <result-file> <n_times>
+```
+Test all algorithms with all possible symbol size `n_times` times
 ## Build
 ```
 make [BITS=<size-of-alphabet>]
