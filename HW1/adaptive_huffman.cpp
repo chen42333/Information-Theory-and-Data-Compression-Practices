@@ -9,7 +9,7 @@ unordered_map<uint64_t, coding_tree_node*> node_table; // id to node
 unordered_map<alphabet, uint64_t> id_table; // alphabet to id
 coding_tree_node *NYT;
 
-char output_c;
+char output_c = 0;
 int output_c_remain = 0;
 
 void init_coding_tree()
@@ -65,6 +65,7 @@ static void output_code(alphabet c, bool is_first, ofstream &output_file)
         if (++output_c_remain == CHAR_BIT)
         {
             output_file.write(&output_c, 1);
+            output_c = 0;
             output_c_remain = 0;
         }
         path.pop();
@@ -162,7 +163,6 @@ static void update_coding_tree(alphabet c, bool is_first)
             break;
         nd = nd->parent;
     }
-
 }
 
 void adaptive_huffman(ifstream &input_file, ofstream &output_file)
@@ -185,4 +185,68 @@ void adaptive_huffman(ifstream &input_file, ofstream &output_file)
     }
 
     flush_output_buffer(output_file);
+}
+
+inline static bool is_external_node(coding_tree_node *node)
+{
+    return !node->children[0] && !node->children[1];
+}
+
+void adaptive_huffman_decode(ifstream &input_file, ofstream &output_file)
+{
+    uint8_t c = 0;
+    int c_remain = 0;
+
+    while (true)
+    {
+        coding_tree_node *nd = root;
+
+        while (!is_external_node(nd))
+        {
+            if (!c_remain)
+            {
+                if (!input_file.read(reinterpret_cast<char*>(&c), 1))
+                    return;
+                c_remain = CHAR_BIT;
+            }
+                
+            nd = nd->children[c >> (CHAR_BIT - 1)];
+            c <<= 1;
+            c_remain--;
+        }
+
+        if (nd != NYT)
+        {
+            update_coding_tree(nd->c, false);
+            output_file.write(reinterpret_cast<char*>(&nd->c), sizeof(alphabet));
+        } else {
+            alphabet new_c = 0;
+
+            if (!c_remain)
+            {
+                if (!input_file.read(reinterpret_cast<char*>(&new_c), sizeof(alphabet)) || input_file.gcount() != sizeof(alphabet))
+                    return;
+            } else {
+                alphabet buf;
+                
+                if (!input_file.read(reinterpret_cast<char*>(&buf), sizeof(alphabet)) || input_file.gcount() != sizeof(alphabet))
+                    return;
+
+                for (int i = 0; i < sizeof(alphabet); i++)
+                {
+                    if (!i)
+                        ((uint8_t*)&new_c)[i] = c;
+
+                    ((uint8_t*)&new_c)[i] |= ((uint8_t*)&buf)[i] >> c_remain;
+                    
+                    if (i < sizeof(alphabet) - 1)
+                        ((uint8_t*)&new_c)[i + 1] |= ((uint8_t*)&buf)[i] << (CHAR_BIT - c_remain);
+                    else
+                        c = ((uint8_t*)&buf)[i] << (CHAR_BIT - c_remain);
+                }
+            }
+            update_coding_tree(new_c, true);
+            output_file.write(reinterpret_cast<char*>(&new_c), sizeof(alphabet));
+        }
+    }
 }
