@@ -14,17 +14,18 @@ struct
     char *output_fname = NULL;
     algorithm algo = BASIC;
     bool encode = true;
+    char *pmf_fname = NULL;
 } opts;
 
 inline static void usage()
 {
-    cout << "usage: ./huffman -i <input-file> -o <output-file> [-e|-d] [-a <basic|adaptive>]" << endl;
+    cerr << "usage: ./huffman -i <input-file> -o <output-file> [-e|-d] [-a <basic|adaptive>] [-p]" << endl;
 }
 
 void parse_args(int argc, char *argv[])
 {
     int opt;
-    while ((opt = getopt(argc, argv, "eda:i:o:")) != -1)
+    while ((opt = getopt(argc, argv, "eda:i:o:p:")) != -1)
     {
         switch (opt)
         {
@@ -51,6 +52,9 @@ void parse_args(int argc, char *argv[])
             case 'o':
                 opts.output_fname = optarg;
                 break;
+            case 'p':
+                opts.pmf_fname = optarg;
+                break;
             default:
                 usage();
                 exit(1);
@@ -68,6 +72,8 @@ void parse_args(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     parse_args(argc, argv);
+    if (opts.pmf_fname && (!opts.encode || opts.algo != BASIC))
+        cerr << "Warning: generate PMF information in only supported for basic huffman encoding" << endl;
     
     ifstream input_file(opts.input_fname, ios::binary);
     ofstream output_file(opts.output_fname, ios::binary);
@@ -76,10 +82,23 @@ int main(int argc, char *argv[])
     {
         if (opts.encode)
         {
-            unordered_map<alphabet, tuple<alphabet, alphabet>> node; // The tuple stands for (set, bit)
+            unordered_map<alphabet, tuple<alphabet, alphabet, double>> node; // The tuple stands for (set, bit, prob)
             unordered_map<alphabet, tuple<alphabet, alphabet>> set;
 
             count_alphabet(input_file);
+
+            if (opts.pmf_fname)
+            {
+                ofstream pmf_file(opts.pmf_fname);
+
+                input_file.clear();
+                input_file.seekg(0, std::ios::beg);
+
+                output_pmf_info(input_file, pmf_file);
+
+                pmf_file.close();
+            }
+
             huffman(node, set);
 
             input_file.clear();

@@ -19,9 +19,9 @@ for i in 8 16 32 64; do
     for j in $(seq 1 $times); do
         echo "--- $j ---"
         echo "--- Encode ---"
-        /usr/bin/time -alp ./huffman -i "$orig" -o "$tmp" -e -a basic
+        (/usr/bin/time -alp ./huffman -i "$orig" -o "$tmp" -e -a basic) 2>&1
         echo "--- Decode ---"
-        /usr/bin/time -alp ./huffman -i "$tmp" -o "$rst" -d -a basic
+        (/usr/bin/time -alp ./huffman -i "$tmp" -o "$rst" -d -a basic) 2>&1
     done
     diff "$orig" "$rst"
     if [ $? -eq 0 ]; then
@@ -41,9 +41,9 @@ for i in 8 16 32; do
     for j in $(seq 1 $times); do
         echo "--- $j ---"
         echo "--- Encode ---"
-        /usr/bin/time -alp ./huffman -i "$orig" -o "$tmp" -e -a adaptive
+        (/usr/bin/time -alp ./huffman -i "$orig" -o "$tmp" -e -a adaptive) 2>&1
         echo "--- Decode ---"
-        /usr/bin/time -alp ./huffman -i "$tmp" -o "$rst" -d -a adaptive
+        (/usr/bin/time -alp ./huffman -i "$tmp" -o "$rst" -d -a adaptive) 2>&1
     done
     truncate -s $(wc -c < "$orig") "$rst"
     diff "$orig" "$rst"

@@ -46,13 +46,15 @@ struct code_table_node // For decoding
 extern void *code_table[];
 
 void count_alphabet(ifstream&);
-void huffman(unordered_map<alphabet, tuple<alphabet, alphabet>>&, unordered_map<alphabet, tuple<alphabet, alphabet>>&);
+void huffman(unordered_map<alphabet, tuple<alphabet, alphabet, double>>&, unordered_map<alphabet, tuple<alphabet, alphabet>>&);
 void free_code_table(void**, int);
-void fill_code_table(unordered_map<alphabet, tuple<alphabet, alphabet>>&, unordered_map<alphabet, tuple<alphabet, alphabet>>&);
+void fill_code_table(unordered_map<alphabet, tuple<alphabet, alphabet, double>>&, unordered_map<alphabet, tuple<alphabet, alphabet>>&);
 void output(ifstream&, ofstream&);
 
 void fill_code_table_decode(ifstream&);
 void huffman_decode(ifstream&, ofstream&);
 void free_code_table_decode(void**);
+
+void output_pmf_info(ifstream&, ofstream&);
 
 #endif

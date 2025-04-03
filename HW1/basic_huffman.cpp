@@ -2,7 +2,7 @@
 
 #define INIT_VAL (alphabet)0xff
 
-int num_alphabet = 0;
+uint64_t num_alphabet = 0;
 void *count_table[1ULL << TABLE_SIZE_EXP] = { NULL };
 void *code_table[1ULL << TABLE_SIZE_EXP] = { NULL };
 int page_level = sizeof(alphabet) * CHAR_BIT / TABLE_SIZE_EXP;
@@ -36,7 +36,7 @@ void count_alphabet(ifstream &file)
                     cur_table[idx] = calloc(1, sizeof(uint64_t));
                 if (!cur_table[idx])
                 {
-                    cout << "Error: calloc() failed" << endl;
+                    cerr << "Error: calloc() failed" << endl;
                     exit(1);
                 }
                 (*(uint64_t*)cur_table[idx])++;
@@ -45,7 +45,7 @@ void count_alphabet(ifstream &file)
                     cur_table[idx] = calloc(1, sizeof(void*) * (1ULL << TABLE_SIZE_EXP));
                 if (!cur_table[idx])
                 {
-                    cout << "Error: calloc() failed" << endl;
+                    cerr << "Error: calloc() failed" << endl;
                     exit(1);
                 }
                 cur_table = (void**)cur_table[idx];
@@ -54,13 +54,13 @@ void count_alphabet(ifstream &file)
     }
 }
 
-static void compute_prob(void **table, priority_queue<prob_node> &prob, unordered_map<alphabet, tuple<alphabet, alphabet>> &node, int level, alphabet idx)
+static void compute_prob(void **table, priority_queue<prob_node> &prob, unordered_map<alphabet, tuple<alphabet, alphabet, double>> &node, int level, alphabet idx)
 {
     if (level == page_level)
     {
         double p = *(uint64_t*)table / (double)num_alphabet;
         prob.push({.c = idx, .p = p, .is_set = false});
-        node[idx] = make_tuple(idx, INIT_VAL);
+        node[idx] = make_tuple(idx, INIT_VAL, p);
         free(table);
         return;
     }
@@ -81,7 +81,7 @@ static void compute_prob(void **table, priority_queue<prob_node> &prob, unordere
         free(table);
 }
 
-void huffman(unordered_map<alphabet, tuple<alphabet, alphabet>> &node, unordered_map<alphabet, tuple<alphabet, alphabet>> &set)
+void huffman(unordered_map<alphabet, tuple<alphabet, alphabet, double>> &node, unordered_map<alphabet, tuple<alphabet, alphabet>> &set)
 {
     priority_queue<prob_node> prob;
     int num_kind_alphabet;
@@ -102,7 +102,10 @@ void huffman(unordered_map<alphabet, tuple<alphabet, alphabet>> &node, unordered
             if (least_prob[j].is_set)
                 set[least_prob[j].c] = make_tuple(i, j);
             else
-                node[least_prob[j].c] = make_tuple(i, j);
+            {
+                get<0>(node[least_prob[j].c]) = i;
+                get<1>(node[least_prob[j].c]) = j;
+            }
         }
 
         set[i] = make_tuple(i, INIT_VAL);
@@ -133,8 +136,10 @@ void free_code_table(void **table, int level)
         free(table);
 }
 
-void fill_code_table(unordered_map<alphabet, tuple<alphabet, alphabet>> &node, unordered_map<alphabet, tuple<alphabet, alphabet>> &set)
+void fill_code_table(unordered_map<alphabet, tuple<alphabet, alphabet, double>> &node, unordered_map<alphabet, tuple<alphabet, alphabet>> &set)
 {
+    double avg_len = 0;
+
     for (const auto &_node: node)
     {
         stack<alphabet> codeword_bit;
@@ -142,6 +147,7 @@ void fill_code_table(unordered_map<alphabet, tuple<alphabet, alphabet>> &node, u
         uint8_t *c_ptr;
         int c_idx = CHAR_BIT - 1;
         void **cur_table = code_table;
+        double p = get<2>(_node.second);
         alphabet cur_set = get<0>(_node.second);
         codeword_bit.push(get<1>(_node.second));
 
@@ -154,7 +160,7 @@ void fill_code_table(unordered_map<alphabet, tuple<alphabet, alphabet>> &node, u
         nd = (code_node*)calloc(1, sizeof(uint64_t) + (codeword_bit.size() + CHAR_BIT - 1) / CHAR_BIT);
         if (!nd)
         {
-            cout << "Error: calloc() failed" << endl;
+            cerr << "Error: calloc() failed" << endl;
             exit(1);
         }
         nd->len = codeword_bit.size();
@@ -184,13 +190,17 @@ void fill_code_table(unordered_map<alphabet, tuple<alphabet, alphabet>> &node, u
                     cur_table[idx] = calloc(1, sizeof(void*) * (1ULL << TABLE_SIZE_EXP));
                 if (!cur_table[idx])
                 {
-                    cout << "Error: calloc() failed" << endl;
+                    cerr << "Error: calloc() failed" << endl;
                     exit(1);
                 }
                 cur_table = (void**)cur_table[idx];
             }
         }
+
+        avg_len += nd->len * p;
     }
+
+    cout << "Average codeword length: " << avg_len << endl;
 }
 
 static void output_code_table(ofstream &output_file, void **table, int level, alphabet idx)
@@ -244,7 +254,7 @@ void output(ifstream &input_file, ofstream &output_file)
 
             if (!cur_table[idx])
             {
-                cout << "Error: code not found" << endl;
+                cerr << "Error: code not found" << endl;
                 exit(1);
             }
             cur_table = (void**)cur_table[idx];
@@ -305,7 +315,7 @@ static void __fill_code_table_decode(void **table)
         {
             if (i == 0)
             {
-                cout << "Error: the first entry of table is empty" << endl;
+                cerr << "Error: the first entry of table is empty" << endl;
                 exit(1);
             }
             else
@@ -326,7 +336,7 @@ void fill_code_table_decode(ifstream &input_file)
     if (!input_file.read(reinterpret_cast<char*>(&num_bytes), sizeof(num_bytes))
     || !input_file.read(reinterpret_cast<char*>(&code_table_size), sizeof(uint64_t)))
     {
-        cout << "Read error" << endl;
+        cerr << "Read error" << endl;
         exit(1);
     }
 
@@ -382,7 +392,7 @@ void huffman_decode(ifstream &input_file, ofstream &output_file)
             c |= buf >> c_remain;
             if (!(ptr = (void**)ptr[c]))
             {
-                cout << "Error: empty code table entry" << endl;
+                cerr << "Error: empty code table entry" << endl;
                 exit(1);
             }
             if (malloc_size(ptr) < one_level_table_size) // Node found
@@ -416,5 +426,91 @@ void huffman_decode(ifstream &input_file, ofstream &output_file)
             c_remain = CHAR_BIT - shift_bits;
             skip_read = false;
         }
+    }
+}
+
+static void _output_pmf_info(void **table, ofstream &output_file, uint64_t alphabets, int level, alphabet idx)
+{
+    if (level == page_level)
+    {
+        double p = *(uint64_t*)table / (double)alphabets;
+
+        output_file << "0x" << hex << (uint64_t)idx << " " << dec <<  p << endl;
+        return;
+    }
+
+    for (alphabet i = 0; ; i++)
+    {
+        if (table[i])
+        {
+            ((uint8_t*)&idx)[level] = i;
+            _output_pmf_info((void**)table[i], output_file, alphabets, level + 1, idx);
+        }
+            
+        if (i == (1ULL << TABLE_SIZE_EXP) - 1) // Prevent the infinite loop due to overflow of i when BITS == 8
+            break;
+    }
+}
+
+void output_pmf_info(ifstream &input_file, ofstream &output_file)
+{
+    uint64_t block_size = 40 * (1 << 20); // 40MB
+
+    output_file << "----- PMF of the entire file -----" << endl;
+    _output_pmf_info(count_table, output_file, num_alphabet, 0, 0);
+
+    for (int i = 1; ; i++)
+    {
+        void **_count_table = (void**)calloc(1, sizeof(void*) * (1ULL << TABLE_SIZE_EXP));
+        alphabet c;
+        uint64_t total = 0;
+
+        output_file << "----- PMF of the "<< i << ". " << block_size / (1 << 20) << "MB -----" << endl;
+
+        while (input_file.read(reinterpret_cast<char*>(&c), sizeof(alphabet)) || input_file.gcount() > 0)
+        {
+            void **cur_table = _count_table;
+
+            if (input_file.gcount() != sizeof(alphabet))
+            {
+                alphabet mask = (1ULL << (input_file.gcount() * CHAR_BIT)) - 1;   
+                c &= mask;
+            }
+
+            for (int i = 0; i < page_level; i++)
+            {
+                int idx = ((uint8_t*)&c)[i];
+
+                if (i == page_level - 1)
+                {
+                    if (!cur_table[idx])
+                        cur_table[idx] = calloc(1, sizeof(uint64_t));
+                    if (!cur_table[idx])
+                    {
+                        cerr << "Error: calloc() failed" << endl;
+                        exit(1);
+                    }
+                    (*(uint64_t*)cur_table[idx])++;
+                } else {
+                    if (!cur_table[idx])
+                        cur_table[idx] = calloc(1, sizeof(void*) * (1ULL << TABLE_SIZE_EXP));
+                    if (!cur_table[idx])
+                    {
+                        cerr << "Error: calloc() failed" << endl;
+                        exit(1);
+                    }
+                    cur_table = (void**)cur_table[idx];
+                }
+            }
+
+            total += sizeof(alphabet);
+            if (total == block_size)
+                break;
+        }
+        _output_pmf_info(_count_table, output_file, total, 0, 0);
+        free_code_table(_count_table, 0);
+
+        if (total < block_size)
+            break;
     }
 }

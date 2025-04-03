@@ -8,6 +8,7 @@ unordered_map<uint64_t, set<uint64_t>> blocks; // weight to block
 unordered_map<uint64_t, coding_tree_node*> node_table; // id to node
 unordered_map<alphabet, uint64_t> id_table; // alphabet to id
 coding_tree_node *NYT;
+uint64_t num_input = 0, num_output = 0;
 
 char output_c = 0;
 int output_c_remain = 0;
@@ -67,6 +68,7 @@ static void output_code(alphabet c, bool is_first, ofstream &output_file)
             output_file.write(&output_c, 1);
             output_c = 0;
             output_c_remain = 0;
+            num_output++;
         }
         path.pop();
     }
@@ -79,6 +81,7 @@ static void output_code(alphabet c, bool is_first, ofstream &output_file)
             output_c |= byte >> output_c_remain;
             output_file.write(&output_c, 1);
             output_c = byte << (CHAR_BIT - output_c_remain);
+            num_output++;
         }
     }
 }
@@ -179,12 +182,16 @@ void adaptive_huffman(ifstream &input_file, ofstream &output_file)
             c &= mask;
         }
 
+        num_input++;
+
         is_first = (id_table.find(c) == id_table.end());
         output_code(c, is_first, output_file);
         update_coding_tree(c, is_first);
     }
 
     flush_output_buffer(output_file);
+
+    cout << "Average codeword length: " << (double)num_output / num_input * CHAR_BIT << endl;
 }
 
 inline static bool is_external_node(coding_tree_node *node)
