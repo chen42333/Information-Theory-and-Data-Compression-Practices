@@ -13,7 +13,13 @@ make [BITS=<size-of-alphabet>]
 - `make clean` before changing the alphabet size
 ## Execution
 ```
-./huffman -i <input-file> -o <output-file> [-e|-d] [-a <basic|adaptive>]
+./huffman -i <input-file> -o <output-file> [-e|-d] [-a <basic|adaptive>] [-p <file>]
 ```
 - `-a` for algorithm: `basic` (default), `adaptive`
 - `-e` for encoding (default), `-d` for decoding
+- `-p` for output PMF information to the file specified (only supported for basic huffman encoding)
+## PMF Chart
+```
+python3 draw.py <input-file> <output-folder>
+```
+- `input-file` is the file generate by `-p`
