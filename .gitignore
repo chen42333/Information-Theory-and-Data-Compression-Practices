@@ -36,6 +36,13 @@
 __MACOSX/
 *.dSYM/
 
-HW1/alexnet.pth
+alexnet.pth
 HW1/huffman
 HW1/output*
+
+HW2/ac
+HW2/output*
+
+*_110550029/
+*.zip
+template.*
